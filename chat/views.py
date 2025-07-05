@@ -55,5 +55,7 @@ class CheckPatientChat(APIView):
 
             return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        except Exception as e:
+                except Exception as e:
+            import traceback
+            traceback.print_exc()
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
