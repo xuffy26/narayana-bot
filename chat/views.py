@@ -4,6 +4,7 @@ from rest_framework import status
 import requests
 import json
 import re
+import traceback
 
 class CheckPatientChat(APIView):
 
@@ -27,15 +28,16 @@ class CheckPatientChat(APIView):
             }
 
             response = requests.post(url, headers=headers, data=payload)
+            print("RESPONSE STATUS:", response.status_code)
+            print("RESPONSE RAW:", response.content)
+
             decoded_data = response.json()
 
             if response.status_code == 200:
-                # Prepare patient list with dynamic message_content as body
                 patient_list = []
 
                 message_content = decoded_data.get("message_content", "").strip()
                 if message_content:
-                    # Clean up whitespace
                     cleaned_msg = re.sub(r'\s+', ' ', message_content)
                     patient_list.append({"body": cleaned_msg})
 
@@ -49,13 +51,11 @@ class CheckPatientChat(APIView):
                                 "description": row.get("description")
                             })
 
-                # Return either the list or a fallback
                 if patient_list:
                     return Response(patient_list, status=status.HTTP_200_OK)
 
             return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
-                except Exception as e:
-            import traceback
+        except Exception as e:
             traceback.print_exc()
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
