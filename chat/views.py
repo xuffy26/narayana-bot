@@ -36,9 +36,10 @@ class CheckPatientChat(APIView):
             if response.status_code == 200:
                 patient_list = []
 
-                message_content = decoded_data.get("message_content", "").strip()
-                if message_content:
-                    cleaned_msg = re.sub(r'\s+', ' ', message_content)
+                # Check both 'message_content' and 'body'
+                message = decoded_data.get("message_content") or decoded_data.get("body", "")
+                if message:
+                    cleaned_msg = re.sub(r'\s+', ' ', message).strip()
                     patient_list.append({"body": cleaned_msg})
 
                 if "sections" in decoded_data and isinstance(decoded_data["sections"], list):
