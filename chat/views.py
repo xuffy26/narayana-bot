@@ -34,26 +34,38 @@ class CheckPatientChat(APIView):
             decoded_data = response.json()
 
             if response.status_code == 200:
-                patient_list = []
+                final_list = []
 
-                # Check both 'message_content' and 'body'
-                message = decoded_data.get("message_content") or decoded_data.get("body", "")
-                if message:
-                    cleaned_msg = re.sub(r'\s+', ' ', message).strip()
-                    patient_list.append({"body": cleaned_msg})
+                # Get the greeting message
+                message_content = decoded_data.get("message_content", "").strip()
+                cleaned_msg = re.sub(r'\s+', ' ', message_content) if message_content else ""
 
+                # Get the rows
+                rows = []
                 if "sections" in decoded_data and isinstance(decoded_data["sections"], list):
                     for section in decoded_data["sections"]:
                         rows = section.get("rows", [])
-                        for row in rows:
-                            patient_list.append({
-                                "id": row.get("id"),
-                                "title": row.get("title"),
-                                "description": row.get("description")
-                            })
+                        break  # Only first section considered
 
-                if patient_list:
-                    return Response(patient_list, status=status.HTTP_200_OK)
+                # Add first row with body
+                if cleaned_msg and rows:
+                    first_row = rows[0]
+                    final_list.append({
+                        "body": cleaned_msg,
+                        "id": first_row.get("id"),
+                        "title": first_row.get("title"),
+                        "description": first_row.get("description")
+                    })
+
+                    # Add remaining rows (without body)
+                    for row in rows[1:]:
+                        final_list.append({
+                            "id": row.get("id"),
+                            "title": row.get("title"),
+                            "description": row.get("description")
+                        })
+
+                    return Response(final_list, status=status.HTTP_200_OK)
 
             return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
