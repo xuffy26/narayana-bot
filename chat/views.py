@@ -33,6 +33,11 @@ class CheckPatientChat(APIView):
             decoded_data = response.json()
 
             if response.status_code == 200:
+
+                # Handle specific client error
+                if decoded_data.get("error") == "No message found":
+                    return Response({"error": "Client API is giving empty response"}, status=status.HTTP_404_NOT_FOUND)
+
                 # Case: sections exist (multi-item patient list)
                 if "sections" in decoded_data and isinstance(decoded_data["sections"], list):
                     rows = []
