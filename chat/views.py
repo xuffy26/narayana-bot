@@ -7,7 +7,6 @@ import re
 import traceback
 
 class CheckPatientChat(APIView):
-
     def post(self, request):
         try:
             user_number = request.data.get("user_number")
@@ -31,22 +30,24 @@ class CheckPatientChat(APIView):
             print("RESPONSE STATUS:", response.status_code)
             print("RESPONSE RAW:", response.content)
 
-            # Decode response
             decoded_data = response.json()
 
             if response.status_code == 200:
-                # Check for sections + rows (patient list case)
+                # Case: sections exist (multi-item patient list)
                 if "sections" in decoded_data and isinstance(decoded_data["sections"], list):
                     rows = []
                     for section in decoded_data["sections"]:
                         rows = section.get("rows", [])
-                        break  # Only consider first section
+                        break  # Only first section
 
-                    final_list = []
                     message_content = decoded_data.get("body", "").strip()
                     cleaned_msg = re.sub(r'\s+', ' ', message_content) if message_content else ""
 
-                    if cleaned_msg and rows:
+                    if not cleaned_msg:
+                        return Response({"error": "Client API is giving empty response"}, status=status.HTTP_404_NOT_FOUND)
+
+                    if rows:
+                        final_list = []
                         first_row = rows[0]
                         final_list.append({
                             "body": cleaned_msg,
@@ -60,14 +61,15 @@ class CheckPatientChat(APIView):
                                 "title": row.get("title"),
                                 "description": row.get("description")
                             })
-
                         return Response(final_list, status=status.HTTP_200_OK)
 
-                # Else: it's just a message
+                # Case: single message response
                 message_content = decoded_data.get("message_content", "").strip()
-                if message_content:
-                    cleaned_msg = re.sub(r'\s+', ' ', message_content)
-                    return Response({"msg": cleaned_msg}, status=status.HTTP_200_OK)
+                if not message_content:
+                    return Response({"error": "Client API is giving empty response"}, status=status.HTTP_404_NOT_FOUND)
+
+                cleaned_msg = re.sub(r'\s+', ' ', message_content)
+                return Response({"msg": cleaned_msg}, status=status.HTTP_200_OK)
 
             return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
